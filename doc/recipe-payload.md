@@ -1,6 +1,6 @@
 # Recipe Payload
 
-The recipe payload encodes the pour program (per-pour volume, temperature, pattern, agitation, pause, RPM, flow rate) plus the grind setting and brew ratio. It is carried by the pours command (`0x41` with grinder ON, `0x44` no-grind) after the frame marker.
+The recipe payload encodes the pour program (per-pour volume, temperature, pattern, agitation, pause, RPM, flow rate) plus the grind setting and brew ratio. It is carried as the frame payload of the pours command (`0x41` with grinder ON, `0x44` no-grind), starting at offset 9 of the [command frame](/doc/command-frame.md).
 
 * UUID: `0000ffe1-0000-1000-8000-00805f9b34fb`
 * Methods: `WRITE`
@@ -16,7 +16,7 @@ The recipe payload encodes the pour program (per-pour volume, temperature, patte
 
 | Byte        | Field   | Description                                                    |
 | ----------- | ------- | -------------------------------------------------------------- |
-| 0           | Marker  | Constant `0x01`                                               |
+| 0           | Lead    | Constant `0x01` (the recipe payload's own first byte — not a separate frame marker) |
 | 1           | LEN     | Byte length of the body (all pour segments)                    |
 | 2…          | Segments| One or more pour segments, see below                           |
 | last - 2    | grind   | Grinder setting `1–80`, or `0xFE` = no-grind (skip grinder)    |
@@ -73,7 +73,7 @@ A single 100 mL pour at 92 °C, spiral with agitation, 30 s pause, RPM 80, flow 
 
 ```
 Recipe payload: 01 08 64 5C 02 02 E2 00 50 1E 32 64
-                01               marker
+                01               payload lead byte
                 08               body length = 8
                 64               ml = 100
                 5C               temp = 92

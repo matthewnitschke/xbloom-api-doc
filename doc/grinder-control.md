@@ -44,8 +44,8 @@ Raw bytes (12): 58 01 01 AC 0D 0C 00 00 00 01 20 21
 
 58 01 01              Header + device + type
 AC 0D                 Command 0x0DAC = 3500
-0C 00 00 00           Length = 12
-01                    Payload marker (empty)
+0C 00 00 00           Length = 12 (payload = 1 byte)
+01                    Payload first byte (the command's single `0x01` payload byte)
 20 21                 CRC16
 ```
 

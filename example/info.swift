@@ -12,7 +12,9 @@ let delegate = AppDelegate()
 app.delegate = delegate
 app.setActivationPolicy(.accessory)
 
-// Frame building — 58 01 01 | CMD u16 LE | LEN u32 LE | 01 | payload | CRC16 LE
+// Frame building — 58 01 01 | CMD u16 LE | LEN u32 LE | payload | CRC16 LE
+// LEN = 11 + payload.len; payload starts at offset 9 and already includes
+// its leading 0x01 byte (no separate marker).
 func crc16Kermit(_ data: [UInt8]) -> UInt16 {
     var crc: UInt16 = 0
     for byte in data {
@@ -30,10 +32,9 @@ func crc16Kermit(_ data: [UInt8]) -> UInt16 {
 
 func frame(cmd: UInt8, seq: UInt8, payload: [UInt8]) -> Data {
     var body = [UInt8]([0x58, 0x01, 0x01, cmd, seq])
-    let len = UInt32(12 + payload.count)
+    let len = UInt32(11 + payload.count)
     body.append(contentsOf: [UInt8(truncatingIfNeeded: len & 0xFF), UInt8(truncatingIfNeeded: (len >> 8) & 0xFF),
                              UInt8(truncatingIfNeeded: (len >> 16) & 0xFF), UInt8(truncatingIfNeeded: (len >> 24) & 0xFF)])
-    body.append(0x01)
     body.append(contentsOf: payload)
     let crc = crc16Kermit(body)
     body.append(UInt8(truncatingIfNeeded: crc & 0xFF))

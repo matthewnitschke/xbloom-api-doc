@@ -24,9 +24,10 @@ Every command sent to the machine is a single little-endian frame written to the
 | 2      | TypeCode | 1      | `0x01` standard commands, `0x02` Studio/dial commands          |
 | 3–4    | Command  | 2      | 16-bit command code, little-endian                             |
 | 5–8    | Length   | 4      | Total frame length incl. header + CRC, little-endian           |
-| 9      | Type     | 1      | Fixed payload marker `0x01`                                    |
-| 10+    | Payload  | varies | Command-specific data (see per-command docs)                   |
+| 9+     | Payload  | varies | Command-specific data (see per-command docs)                   |
 | last 2 | CRC16    | 2      | CRC-16/KERMIT over bytes `0..end-3`, little-endian             |
+
+`Length` = `11 + payload.len` where `payload` is everything from offset 9 to the CRC (e.g. a 12-byte frame has a 1-byte payload). There is **no separate marker byte**: the byte at offset 9 is the *first payload byte*, and most command payloads begin with their own `0x01` (a payload version/type byte) — which reads like a "marker" but must not be emitted twice. Builders that append a fixed `0x01` marker *and* a payload that already starts with `0x01` (e.g. the `0xA4` session payload `01 B9 …`) produce a frame that is one byte too long and the machine rejects it.
 
 The 16-bit `Command` value doubles as an **opcode + sequence** pair: the low byte is the opcode, the high byte is the sequence/section. For example `8001` = `0x1F41` is byte pair `41 1F` (opcode `0x41`, sequence `0x1F`).
 
@@ -35,7 +36,7 @@ The 16-bit `Command` value doubles as an **opcode + sequence** pair: the low byt
 Command payloads are either a list of 32-bit little-endian integers or raw bytes, depending on the command:
 
 - **Integer payload** — each value is a `u32 LE`. Used by `8102` (bypass), `8104` (cup), `8006` (grinder in), `4510` (temperature), `4506` (brewer start), `8016` (pattern). Floats that carry fractions (volume, temperature) are encoded as the **bit pattern of a float32** (`struct.pack("<I", struct.pack("<f", value)[0])`) or as **value × 10** kept as an integer.
-- **Raw payload** — arbitrary bytes appended after the marker. Used by every recipe/load command (`0x41`, `0x44`, `0xA6`, `0xA8`…) and raw-pass commands (`4513`, `4512`).
+- **Raw payload** — arbitrary bytes from offset 9. Used by every recipe/load command (`0x41`, `0x44`, `0xA6`, `0xA8`…) and raw-pass commands (`4513`, `4512`).
 
 ## CRC-16/KERMIT
 
@@ -63,8 +64,8 @@ Raw bytes (12): 58 01 01 AC 0D 0C 00 00 00 01 20 21
 01                    Device id
 01                    TypeCode (standard)
 AC 0D                 Command 0x0DAC = 3500 (Grinder Start)
-0C 00 00 00           Length = 12 (whole frame)
-01                    Payload marker
+0C 00 00 00           Length = 12 (whole frame; payload = 1 byte)
+01                    Payload first byte (the 0x01 this command carries)
 20 21                 CRC16
 ```
 
@@ -75,8 +76,8 @@ Raw bytes (12): 58 01 01 42 1F 0C 00 00 00 01 7F CF
 
 58 01 01              Header + device + type
 42 1F                 Command 0x1F42 = 8002 (Commit/Execute; opcode 0x42, seq 0x1F)
-0C 00 00 00           Length = 12
-01                    Payload marker (empty payload)
+0C 00 00 00           Length = 12 (whole frame; payload = 1 byte)
+01                    Payload first byte (0x01 — the command's one-byte payload)
 7F CF                 CRC16
 ```
 
@@ -86,7 +87,7 @@ The start packet (`0x46`):
 Raw bytes (12): 58 01 01 46 9E 0C 00 00 00 01 80 A1
 
 46 9E                 Command (opcode 0x46, seq 0x9E = brew phase)
-0C 00 00 00           Length = 12
-01                    Payload marker (empty payload)
+0C 00 00 00           Length = 12 (whole frame; payload = 1 byte)
+01                    Payload first byte (0x01)
 80 A1                 CRC16
 ```

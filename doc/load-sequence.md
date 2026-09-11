@@ -70,24 +70,23 @@ At `armed` the machine prompts the human; the recipe can then be approved **on t
 Session start frame (with placeholder CRC):
 
 ```
-Raw bytes: 58 01 01 A4 1F 15 00 00 00 01 01 B9 00 00 00 01 00 00 00 XX XX
+Raw bytes: 58 01 01 A4 1F 14 00 00 00 01 B9 00 00 00 01 00 00 00 XX XX
 
 A4 1F                 Command 0xA4, seq 0x1F
-15 00 00 00           Length = 21 (12 header + 9 payload)
-01                    Payload marker
-01 B9 00 00 00 01 00 00 00   Session payload
+14 00 00 00           Length = 20 (11 header/padding + 9 payload)
+01 B9 00 00 00 01 00 00 00   Session payload (9 bytes, starts with its own 0x01)
 XX XX                 CRC16 (CRC-16/KERMIT)
 ```
 
 The dose frame for 15 g:
 
 ```
-Raw bytes: 58 01 01 A6 1F 19 00 00 00 01 01 00 00 00 00 00 00 00 00 0F 00 00 00 XX XX
+Raw bytes: 58 01 01 A6 1F 18 00 00 00 01 00 00 00 00 00 00 00 00 0F 00 00 00 XX XX
 
 A6 1F                 Command 0xA6, seq 0x1F
-19 00 00 00           Length = 25 (12 + 13 payload)
-01                    Payload marker
-               0F     dose = 15 g
+18 00 00 00           Length = 24 (11 header/padding + 13 payload)
+01                    Payload first byte
+                0F     dose = 15 g
 ```
 
-> The sending client paces the writes (~0.4 s apart) rather than round-tripping each ACK: the machine needs the frames spaced out, and the machine's ACKs accumulate on `ffe2` independently.
+> There is no separate command "marker" byte — the byte at offset 9 is the start of the payload, and payloads like `0xA4`'s begin with their own `0x01`. The sending client paces the writes (~0.4 s apart) rather than round-tripping each ACK: the machine needs the frames spaced out, and the machine's ACKs accumulate on `ffe2` independently. Frame length is `11 + payload.len` ([command-frame](/doc/command-frame.md)); earlier drafts that added a second `0x01` marker (A4 = 21, A6 = 25) produce one-byte-too-long frames the machine rejects.

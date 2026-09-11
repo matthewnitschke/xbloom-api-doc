@@ -30,8 +30,8 @@ Raw bytes (12): 58 01 01 C4 09 0C 00 00 00 01 XX XX
 
 58 01 01              Header + device + type
 C4 09                 Command 0x09C4 = 2500 (SG_LEFT)
-0C 00 00 00           Length = 12
-01                    Payload marker (empty)
+0C 00 00 00           Length = 12 (whole frame; payload = 1 byte)
+01                    Payload first byte (the command's single `0x01` payload byte)
 XX XX                 CRC16 (CRC-16/KERMIT)
 ```
 
