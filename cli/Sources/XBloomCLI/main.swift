@@ -85,12 +85,7 @@ manager.onReady = {
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
         manager.writeFrame(buildFrame(cmd: 0x56, seq: 0x1F, payload: [0x01]))
     }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
-        print("Switching to PRO mode...")
-        manager.writeFrame(buildFrame(cmd: 0xF7, seq: 0x2C,
-                                      payload: [0x01, 0x00, 0x00, 0x00, 0x00], typeCode: 0x02))
-    }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
         sendRecipeFrames()
     }
 }
